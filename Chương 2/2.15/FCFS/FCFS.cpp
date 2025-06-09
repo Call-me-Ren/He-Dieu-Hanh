@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <iomanip>
@@ -33,7 +33,7 @@ int main() {
         });
 
     int currentTime = 0;
-    vector<pair<int, int>> gantt; // (pid hoặc -1 để đánh dấu idle, duration)
+    vector<pair<int, int>> gantt; 
 
     for (auto& p : procs) {
         if (currentTime < p.arrival) {
@@ -48,7 +48,7 @@ int main() {
         currentTime = p.finish;
     }
 
-    // In Gantt Chart
+   
     cout << "Gantt Chart (FCFS):\n|";
     currentTime = 0;
     for (auto& seg : gantt) {
@@ -68,7 +68,7 @@ int main() {
     }
     cout << "\n\n";
 
-    // In bảng kết quả chi tiết
+    
     cout << "PID\tArr\tBurst\tStart\tFinish\tTAT\tWT\n";
     double sumTAT = 0, sumWT = 0;
     for (auto& p : procs) {
@@ -80,6 +80,7 @@ int main() {
             << p.turnaround << "\t"
             << p.waiting << "\n";
         sumTAT += p.turnaround;
+
         sumWT += p.waiting;
     }
     cout << fixed << setprecision(2);
