@@ -35,24 +35,26 @@ int main() {
     sort(procs.begin(), procs.end(), [](const Process& a, const Process& b) {
         if (a.arrival != b.arrival) return a.arrival < b.arrival;
         return a.pid < b.pid;
-    });
+        });
 
-    queue<Process> q;
-    vector<Process> doneList;
+    queue<int> q;
+    vector<int> inQueue(n, 0);
+    vector<pair<int, int>> gantt;
     int idx = 0;
     int currentTime = 0;
 
     if (idx < n) currentTime = procs[idx].arrival;
     while (idx < n && procs[idx].arrival <= currentTime) {
-        q.push(procs[idx]);
+        q.push(idx);
+        inQueue[idx] = 1;
         idx++;
     }
 
-    vector<pair<int, int>> gantt;
-
     while (!q.empty()) {
-        Process p = q.front();
+        int id = q.front();
         q.pop();
+        Process& p = procs[id];
+
         if (p.start == -1) p.start = currentTime;
         int used = min(quantum, p.remaining);
         p.remaining -= used;
@@ -60,25 +62,32 @@ int main() {
         currentTime += used;
 
         while (idx < n && procs[idx].arrival <= currentTime) {
-            q.push(procs[idx]);
+            if (!inQueue[idx]) {
+                q.push(idx);
+                inQueue[idx] = 1;
+            }
             idx++;
         }
+
         if (p.remaining > 0) {
-            q.push(p);
+            q.push(id);
         }
         else {
             p.finish = currentTime;
             p.turnaround = p.finish - p.arrival;
             p.waiting = p.turnaround - p.burst;
-            doneList.push_back(p);
         }
+
         if (q.empty() && idx < n) {
             if (currentTime < procs[idx].arrival) {
                 gantt.push_back({ -1, procs[idx].arrival - currentTime });
                 currentTime = procs[idx].arrival;
             }
             while (idx < n && procs[idx].arrival <= currentTime) {
-                q.push(procs[idx]);
+                if (!inQueue[idx]) {
+                    q.push(idx);
+                    inQueue[idx] = 1;
+                }
                 idx++;
             }
         }
@@ -105,7 +114,7 @@ int main() {
 
     cout << "PID\tArr\tBurst\tStart\tFinish\tTAT\tWT\n";
     double sumTAT = 0, sumWT = 0;
-    for (auto& p : doneList) {
+    for (auto& p : procs) {
         cout << p.pid << "\t"
             << p.arrival << "\t"
             << p.burst << "\t"
