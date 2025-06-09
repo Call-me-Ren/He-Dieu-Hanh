@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <iomanip>
 using namespace std;
 
 int main() {
@@ -26,9 +27,18 @@ int main() {
         for (int j = 0; j < R; j++)
             need[i][j] = max[i][j] - allocation[i][j];
 
+    // In bảng NEED
+    cout << "Need Matrix:\n";
+    for (int i = 0; i < P; i++) {
+        for (int j = 0; j < R; j++)
+            cout << setw(3) << need[i][j] << " ";
+        cout << "\n";
+    }
+
     vector<bool> finish(P, false);
     vector<int> safeSeq;
     vector<int> work = available;
+    vector<vector<int>> workTable;  
 
     int count = 0;
     while (count < P) {
@@ -46,6 +56,8 @@ int main() {
                 if (canRun) {
                     for (int j = 0; j < R; j++)
                         work[j] += allocation[i][j];
+
+                    workTable.push_back(work); 
                     safeSeq.push_back(i);
                     finish[i] = true;
                     found = true;
@@ -60,10 +72,18 @@ int main() {
         }
     }
 
-    cout << "System is in a SAFE state.\n";
+    
+    cout << "Work Table:\n";
+    for (const auto& row : workTable) {
+        for (int val : row)
+            cout << setw(3) << val << " ";
+        cout << "\n";
+    }
+
+    
     cout << "Safe sequence: ";
-    for (int i = 0; i < P; i++)
-        cout << "P" << safeSeq[i] << (i == P - 1 ? "\n" : " -> ");
+    for (int i = 0; i < safeSeq.size(); i++)
+        cout << "P" << safeSeq[i] << (i == safeSeq.size() - 1 ? "\n" : " -> ");
 
     return 0;
 }
