@@ -4,31 +4,24 @@ using namespace std;
 
 int main() {
     int P, R;
-    cout << "Nhap so tien trinh (P): ";
-    cin >> P;
-    cout << "Nhap so loai tai nguyen (R): ";
-    cin >> R;
+    cin >> P >> R;
 
     vector<vector<int>> max(P, vector<int>(R));
     vector<vector<int>> allocation(P, vector<int>(R));
     vector<vector<int>> need(P, vector<int>(R));
     vector<int> available(R);
 
-    cout << "Nhap ma tran MAX (P x R):\n";
     for (int i = 0; i < P; i++)
         for (int j = 0; j < R; j++)
             cin >> max[i][j];
 
-    cout << "Nhap ma tran ALLOCATION (P x R):\n";
     for (int i = 0; i < P; i++)
         for (int j = 0; j < R; j++)
             cin >> allocation[i][j];
 
-    cout << "Nhap mang AVAILABLE (R phan tu):\n";
     for (int i = 0; i < R; i++)
         cin >> available[i];
 
-    // Tinh NEED = MAX - ALLOCATION
     for (int i = 0; i < P; i++)
         for (int j = 0; j < R; j++)
             need[i][j] = max[i][j] - allocation[i][j];
@@ -62,13 +55,13 @@ int main() {
         }
 
         if (!found) {
-            cout << "\nHe thong KHONG an toan!\n";
+            cout << "System is NOT in a safe state.\n";
             return 0;
         }
     }
 
-    cout << "\nHe thong o TRANG THAI AN TOAN.\n";
-    cout << "Chuoi an toan (Safe sequence): ";
+    cout << "System is in a SAFE state.\n";
+    cout << "Safe sequence: ";
     for (int i = 0; i < P; i++)
         cout << "P" << safeSeq[i] << (i == P - 1 ? "\n" : " -> ");
 
