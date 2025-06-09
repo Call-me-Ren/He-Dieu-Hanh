@@ -1,116 +1,63 @@
-﻿#include <iostream>
+#include <iostream>
 #include <vector>
 #include <algorithm>
-#include <queue>
 #include <iomanip>
 using namespace std;
 
 struct Process {
-    int pid;
-    int arrival;
-    int burst;
-    int start;
-    int finish;
-    int turnaround;
-    int waiting;
+    int pid, arrival, burst, start, finish, turnaround, waiting;
 };
 
 int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
     int n;
-    cin >> n;
-    vector<Process> procs(n);
+    cin >> n;  // Không in lời nhắc
+
+    vector<Process> p(n);
     for (int i = 0; i < n; i++) {
-        cin >> procs[i].pid >> procs[i].arrival >> procs[i].burst;
-        procs[i].start = -1;
-        procs[i].finish = -1;
+        cin >> p[i].pid >> p[i].arrival >> p[i].burst;  // Nhập liền mạch
     }
 
-    // Sắp theo arrival; nếu bằng nhau, theo pid
-    sort(procs.begin(), procs.end(), [](const Process& a, const Process& b) {
-        if (a.arrival != b.arrival) return a.arrival < b.arrival;
-        return a.pid < b.pid;
-        });
+    vector<bool> done(n, false);
+    int completed = 0, currentTime = 0;
+    double totalTAT = 0, totalWT = 0;
 
-    int currentTime = 0;
-    int idx = 0;
-    vector<Process> doneList;
-
-    // Comparator cho priority_queue: chọn burst nhỏ nhất; nếu bằng, arrival nhỏ nhất; nếu vẫn bằng, pid nhỏ nhất
-    auto cmp = [](const Process& a, const Process& b) {
-        if (a.burst != b.burst) return a.burst > b.burst;
-        if (a.arrival != b.arrival) return a.arrival > b.arrival;
-        return a.pid > b.pid;
-        };
-    priority_queue<Process, vector<Process>, decltype(cmp)> pq(cmp);
-
-    // Bắt đầu tại arrival đầu tiên
-    if (idx < n) currentTime = procs[idx].arrival;
-
-    while (idx < n || !pq.empty()) {
-        // Đổ các tiến trình đã đến vào priority_queue
-        while (idx < n && procs[idx].arrival <= currentTime) {
-            pq.push(procs[idx]);
-            idx++;
+    while (completed < n) {
+        int idx = -1;
+        int minBurst = 1e9;
+        for (int i = 0; i < n; i++) {
+            if (!done[i] && p[i].arrival <= currentTime && p[i].burst < minBurst) {
+                minBurst = p[i].burst;
+                idx = i;
+            }
         }
-        if (pq.empty()) {
-            // Nếu chưa có tiến trình trong PQ, nhảy tới arrival tiếp theo
-            currentTime = procs[idx].arrival;
+
+        if (idx == -1) {
+            currentTime++;
             continue;
         }
-        // Lấy tiến trình có burst nhỏ nhất
-        Process p = pq.top();
-        pq.pop();
-        p.start = currentTime;
-        p.finish = p.start + p.burst;
-        p.turnaround = p.finish - p.arrival;
-        p.waiting = p.turnaround - p.burst;
-        currentTime = p.finish;
-        doneList.push_back(p);
+
+        p[idx].start = currentTime;
+        p[idx].finish = currentTime + p[idx].burst;
+        p[idx].turnaround = p[idx].finish - p[idx].arrival;
+        p[idx].waiting = p[idx].turnaround - p[idx].burst;
+        done[idx] = true;
+        completed++;
+        currentTime = p[idx].finish;
+
+        totalTAT += p[idx].turnaround;
+        totalWT += p[idx].waiting;
     }
 
-    // In Gantt Chart
-    cout << "Gantt Chart (SJF Non-Preemptive):\n|";
-    currentTime = 0;
-    for (auto& p : doneList) {
-        if (currentTime < p.start) {
-            cout << " Idle(" << (p.start - currentTime) << ") |";
-            currentTime = p.start;
-        }
-        cout << " P" << p.pid << "(" << p.burst << ") |";
-        currentTime = p.finish;
-    }
-    cout << "\n0";
-    currentTime = 0;
-    for (auto& p : doneList) {
-        if (currentTime < p.start) {
-            currentTime = p.start;
-            cout << "\t" << currentTime;
-        }
-        currentTime += p.burst;
-        cout << "\t" << currentTime;
-    }
-    cout << "\n\n";
-
-    // In bảng kết quả chi tiết
-    cout << "PID\tArr\tBurst\tStart\tFinish\tTAT\tWT\n";
-    double sumTAT = 0, sumWT = 0;
-    for (auto& p : doneList) {
-        cout << p.pid << "\t"
-            << p.arrival << "\t"
-            << p.burst << "\t"
-            << p.start << "\t"
-            << p.finish << "\t"
-            << p.turnaround << "\t"
-            << p.waiting << "\n";
-        sumTAT += p.turnaround;
-        sumWT += p.waiting;
-    }
     cout << fixed << setprecision(2);
-    cout << "Average TAT = " << (sumTAT / n) << "\n";
-    cout << "Average WT  = " << (sumWT / n) << "\n";
+    cout << "\nPID\tArrival\tBurst\tStart\tFinish\tTAT\tWT\n";
+    for (auto& proc : p) {
+        cout << proc.pid << "\t" << proc.arrival << "\t" << proc.burst << "\t"
+            << proc.start << "\t" << proc.finish << "\t"
+            << proc.turnaround << "\t" << proc.waiting << "\n";
+    }
+
+    cout << "Average TAT: " << totalTAT / n << "\n";
+    cout << "Average WT: " << totalWT / n << "\n";
 
     return 0;
 }
