@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <queue>
@@ -32,25 +32,23 @@ int main() {
     int quantum;
     cin >> quantum;
 
-    // Sắp theo arrival; nếu bằng nhau, theo pid
     sort(procs.begin(), procs.end(), [](const Process& a, const Process& b) {
         if (a.arrival != b.arrival) return a.arrival < b.arrival;
         return a.pid < b.pid;
-        });
+    });
 
     queue<Process> q;
     vector<Process> doneList;
     int idx = 0;
     int currentTime = 0;
 
-    // Khởi động tại arrival đầu tiên
     if (idx < n) currentTime = procs[idx].arrival;
     while (idx < n && procs[idx].arrival <= currentTime) {
         q.push(procs[idx]);
         idx++;
     }
 
-    vector<pair<int, int>> gantt; // (pid hoặc -1 để đánh dấu idle, duration)
+    vector<pair<int, int>> gantt;
 
     while (!q.empty()) {
         Process p = q.front();
@@ -61,7 +59,6 @@ int main() {
         gantt.push_back({ p.pid, used });
         currentTime += used;
 
-        // Đổ thêm các tiến trình đến trong lúc CPU chạy
         while (idx < n && procs[idx].arrival <= currentTime) {
             q.push(procs[idx]);
             idx++;
@@ -76,7 +73,6 @@ int main() {
             doneList.push_back(p);
         }
         if (q.empty() && idx < n) {
-            // Nếu queue rỗng nhưng vẫn còn tiến trình chưa đến, chờ idle
             if (currentTime < procs[idx].arrival) {
                 gantt.push_back({ -1, procs[idx].arrival - currentTime });
                 currentTime = procs[idx].arrival;
@@ -88,7 +84,6 @@ int main() {
         }
     }
 
-    // In Gantt Chart
     cout << "Gantt Chart (RR, Q=" << quantum << "):\n|";
     currentTime = 0;
     for (auto& seg : gantt) {
@@ -108,7 +103,6 @@ int main() {
     }
     cout << "\n\n";
 
-    // In bảng kết quả chi tiết
     cout << "PID\tArr\tBurst\tStart\tFinish\tTAT\tWT\n";
     double sumTAT = 0, sumWT = 0;
     for (auto& p : doneList) {
