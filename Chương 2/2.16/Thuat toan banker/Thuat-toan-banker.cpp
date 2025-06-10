@@ -1,41 +1,44 @@
 #include <iostream>
 #include <vector>
+#include <iomanip>
 using namespace std;
 
 int main() {
     int P, R;
-    cout << "Nhap so tien trinh (P): ";
-    cin >> P;
-    cout << "Nhap so loai tai nguyen (R): ";
-    cin >> R;
+    cin >> P >> R;
 
     vector<vector<int>> max(P, vector<int>(R));
     vector<vector<int>> allocation(P, vector<int>(R));
     vector<vector<int>> need(P, vector<int>(R));
     vector<int> available(R);
 
-    cout << "Nhap ma tran MAX (P x R):\n";
     for (int i = 0; i < P; i++)
         for (int j = 0; j < R; j++)
             cin >> max[i][j];
 
-    cout << "Nhap ma tran ALLOCATION (P x R):\n";
     for (int i = 0; i < P; i++)
         for (int j = 0; j < R; j++)
             cin >> allocation[i][j];
 
-    cout << "Nhap mang AVAILABLE (R phan tu):\n";
     for (int i = 0; i < R; i++)
         cin >> available[i];
 
-    // Tinh NEED = MAX - ALLOCATION
     for (int i = 0; i < P; i++)
         for (int j = 0; j < R; j++)
             need[i][j] = max[i][j] - allocation[i][j];
 
+    // In bảng NEED
+    cout << "Need Matrix:\n";
+    for (int i = 0; i < P; i++) {
+        for (int j = 0; j < R; j++)
+            cout << setw(3) << need[i][j] << " ";
+        cout << "\n";
+    }
+
     vector<bool> finish(P, false);
     vector<int> safeSeq;
     vector<int> work = available;
+    vector<vector<int>> workTable;  
 
     int count = 0;
     while (count < P) {
@@ -53,6 +56,8 @@ int main() {
                 if (canRun) {
                     for (int j = 0; j < R; j++)
                         work[j] += allocation[i][j];
+
+                    workTable.push_back(work); 
                     safeSeq.push_back(i);
                     finish[i] = true;
                     found = true;
@@ -62,15 +67,23 @@ int main() {
         }
 
         if (!found) {
-            cout << "\nHe thong KHONG an toan!\n";
+            cout << "System is NOT in a safe state.\n";
             return 0;
         }
     }
 
-    cout << "\nHe thong o TRANG THAI AN TOAN.\n";
-    cout << "Chuoi an toan (Safe sequence): ";
-    for (int i = 0; i < P; i++)
-        cout << "P" << safeSeq[i] << (i == P - 1 ? "\n" : " -> ");
+    
+    cout << "Work Table:\n";
+    for (const auto& row : workTable) {
+        for (int val : row)
+            cout << setw(3) << val << " ";
+        cout << "\n";
+    }
+
+    
+    cout << "Safe sequence: ";
+    for (int i = 0; i < safeSeq.size(); i++)
+        cout << "P" << safeSeq[i] << (i == safeSeq.size() - 1 ? "\n" : " -> ");
 
     return 0;
 }
