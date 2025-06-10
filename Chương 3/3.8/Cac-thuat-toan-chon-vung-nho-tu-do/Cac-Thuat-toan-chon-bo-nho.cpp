@@ -1,104 +1,155 @@
-﻿#include <iostream>
+#include <iostream>
 #include <vector>
-#include <algorithm>
+#include <sstream>
 using namespace std;
 
-// Hàm hiển thị kết quả cấp phát
-void displayAllocation(const vector<int>& allocation) {
-    for (int i = 0; i < allocation.size(); i++) {
-        cout << "Tien trinh " << i + 1 << " -> ";
-        if (allocation[i] != -1)
-            cout << "Vung nho " << allocation[i] + 1 << endl;
-        else
-            cout << "Khong duoc cap phat\n";
+struct Block {
+    int size;
+    int originalSize;
+    bool allocated;
+};
+
+struct Process {
+    int size;
+};
+
+void splitInput(const string& line, vector<int>& values) {
+    stringstream ss(line);
+    int x;
+    while (ss >> x) {
+        values.push_back(x);
+    }
+}
+
+void input(vector<Block>& blocks, vector<Process>& processes) {
+    string line;
+    vector<int> sizes;
+
+    cout << "Enter memory block sizes: ";
+    getline(cin, line);
+    splitInput(line, sizes);
+    for (int sz : sizes) {
+        blocks.push_back({ sz, sz, false });
+    }
+
+    sizes.clear();
+    cout << "Enter process sizes: ";
+    getline(cin, line);
+    splitInput(line, sizes);
+    for (int sz : sizes) {
+        processes.push_back({ sz });
     }
 }
 
 // First Fit
-void firstFit(vector<int> blocks, vector<int> processes) {
-    vector<int> allocation(processes.size(), -1);
-
-    for (int i = 0; i < processes.size(); i++) {
-        for (int j = 0; j < blocks.size(); j++) {
-            if (blocks[j] >= processes[i]) {
-                allocation[i] = j;
-                blocks[j] -= processes[i];
+void firstFit(vector<Block> blocks, const vector<Process>& processes) {
+    cout << "\n--- First Fit ---\n";
+    for (size_t i = 0; i < processes.size(); ++i) {
+        bool allocated = false;
+        for (size_t j = 0; j < blocks.size(); ++j) {
+            if (!blocks[j].allocated && blocks[j].size >= processes[i].size) {
+                cout << "Process " << i + 1 << " (" << processes[i].size << "KB)"
+                    << " -> Block " << j + 1 << " (" << blocks[j].originalSize << "KB), Remaining: "
+                    << blocks[j].size - processes[i].size << "KB\n";
+                blocks[j].size -= processes[i].size;
+                blocks[j].allocated = true;
+                allocated = true;
                 break;
             }
         }
+        if (!allocated)
+            cout << "Process " << i + 1 << " (" << processes[i].size << "KB) -> Not Allocated\n";
     }
-
-    cout << "\n=== First Fit ===\n";
-    displayAllocation(allocation);
 }
 
 // Best Fit
-void bestFit(vector<int> blocks, vector<int> processes) {
-    vector<int> allocation(processes.size(), -1);
-
-    for (int i = 0; i < processes.size(); i++) {
+void bestFit(vector<Block> blocks, const vector<Process>& processes) {
+    cout << "\n--- Best Fit ---\n";
+    for (size_t i = 0; i < processes.size(); ++i) {
         int bestIdx = -1;
-        for (int j = 0; j < blocks.size(); j++) {
-            if (blocks[j] >= processes[i]) {
-                if (bestIdx == -1 || blocks[j] < blocks[bestIdx])
+        for (size_t j = 0; j < blocks.size(); ++j) {
+            if (!blocks[j].allocated && blocks[j].size >= processes[i].size) {
+                if (bestIdx == -1 || blocks[j].size < blocks[bestIdx].size)
                     bestIdx = j;
             }
         }
-
         if (bestIdx != -1) {
-            allocation[i] = bestIdx;
-            blocks[bestIdx] -= processes[i];
+            cout << "Process " << i + 1 << " (" << processes[i].size << "KB)"
+                << " -> Block " << bestIdx + 1 << " (" << blocks[bestIdx].originalSize << "KB), Remaining: "
+                << blocks[bestIdx].size - processes[i].size << "KB\n";
+            blocks[bestIdx].size -= processes[i].size;
+            blocks[bestIdx].allocated = true;
+        }
+        else {
+            cout << "Process " << i + 1 << " (" << processes[i].size << "KB) -> Not Allocated\n";
         }
     }
-
-    cout << "\n=== Best Fit ===\n";
-    displayAllocation(allocation);
 }
 
 // Worst Fit
-void worstFit(vector<int> blocks, vector<int> processes) {
-    vector<int> allocation(processes.size(), -1);
-
-    for (int i = 0; i < processes.size(); i++) {
+void worstFit(vector<Block> blocks, const vector<Process>& processes) {
+    cout << "\n--- Worst Fit ---\n";
+    for (size_t i = 0; i < processes.size(); ++i) {
         int worstIdx = -1;
-        for (int j = 0; j < blocks.size(); j++) {
-            if (blocks[j] >= processes[i]) {
-                if (worstIdx == -1 || blocks[j] > blocks[worstIdx])
+        for (size_t j = 0; j < blocks.size(); ++j) {
+            if (!blocks[j].allocated && blocks[j].size >= processes[i].size) {
+                if (worstIdx == -1 || blocks[j].size > blocks[worstIdx].size)
                     worstIdx = j;
             }
         }
-
         if (worstIdx != -1) {
-            allocation[i] = worstIdx;
-            blocks[worstIdx] -= processes[i];
+            cout << "Process " << i + 1 << " (" << processes[i].size << "KB)"
+                << " -> Block " << worstIdx + 1 << " (" << blocks[worstIdx].originalSize << "KB), Remaining: "
+                << blocks[worstIdx].size - processes[i].size << "KB\n";
+            blocks[worstIdx].size -= processes[i].size;
+            blocks[worstIdx].allocated = true;
+        }
+        else {
+            cout << "Process " << i + 1 << " (" << processes[i].size << "KB) -> Not Allocated\n";
         }
     }
+}
 
-    cout << "\n=== Worst Fit ===\n";
-    displayAllocation(allocation);
+// Last Fit
+void lastFit(vector<Block> blocks, const vector<Process>& processes) {
+    cout << "\n--- Last Fit ---\n";
+    for (size_t i = 0; i < processes.size(); ++i) {
+        bool allocated = false;
+        for (int j = blocks.size() - 1; j >= 0; --j) {
+            if (!blocks[j].allocated && blocks[j].size >= processes[i].size) {
+                cout << "Process " << i + 1 << " (" << processes[i].size << "KB)"
+                    << " -> Block " << j + 1 << " (" << blocks[j].originalSize << "KB), Remaining: "
+                    << blocks[j].size - processes[i].size << "KB\n";
+                blocks[j].size -= processes[i].size;
+                blocks[j].allocated = true;
+                allocated = true;
+                break;
+            }
+        }
+        if (!allocated)
+            cout << "Process " << i + 1 << " (" << processes[i].size << "KB) -> Not Allocated\n";
+    }
 }
 
 int main() {
-    int nBlocks, nProcesses;
+    vector<Block> blocks;
+    vector<Process> processes;
 
-    cout << "Nhap so vung nho (block): ";
-    cin >> nBlocks;
-    vector<int> blocks(nBlocks);
-    cout << "Nhap kich thuoc cac vung nho:\n";
-    for (int i = 0; i < nBlocks; i++)
-        cin >> blocks[i];
+    input(blocks, processes);
 
-    cout << "Nhap so tien trinh: ";
-    cin >> nProcesses;
-    vector<int> processes(nProcesses);
-    cout << "Nhap kich thuoc cac tien trinh:\n";
-    for (int i = 0; i < nProcesses; i++)
-        cin >> processes[i];
+    cout << "\nChoose Allocation Strategy:\n";
+    cout << "1. First Fit\n2. Best Fit\n3. Worst Fit\n4. Last Fit\n";
+    cout << "Enter your choice (1-4): ";
+    int choice;
+    cin >> choice;
 
-    // Gọi các thuật toán
-    firstFit(blocks, processes);
-    bestFit(blocks, processes);
-    worstFit(blocks, processes);
+    switch (choice) {
+    case 1: firstFit(blocks, processes); break;
+    case 2: bestFit(blocks, processes); break;
+    case 3: worstFit(blocks, processes); break;
+    case 4: lastFit(blocks, processes); break;
+    default: cout << "Invalid choice.\n";
+    }
 
     return 0;
 }
