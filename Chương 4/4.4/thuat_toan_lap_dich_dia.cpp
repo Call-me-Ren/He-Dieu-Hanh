@@ -149,8 +149,10 @@ int main() {
 
     cout << "Enter current head position: ";
     cin >> currentHead;
+
     cout << "Enter previous head position: ";
     cin >> previousHead;
+    requests.push_back(previousHead); // ✅ Thêm previousHead vào dãy yêu cầu
 
     int n;
     cout << "Enter number of requests: ";
