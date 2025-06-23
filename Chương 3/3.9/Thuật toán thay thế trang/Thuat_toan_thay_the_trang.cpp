@@ -1,127 +1,134 @@
 #include <iostream>
 #include <vector>
-#include <queue>
-#include <unordered_set>
 #include <unordered_map>
 #include <algorithm>
-#include <string>
 using namespace std;
 
-// Input function for page reference string
-void inputPages(vector<int>& pages) {
-    string line;
-    cout << "Enter the page reference string: ";
-    getline(cin, line);
+void input(int& frameSize, vector<int>& pages) {
+    cout << "Enter number of frames: ";
+    cin >> frameSize;
+
+    cout << "Enter page reference string (end with -1): ";
     int x;
-    size_t i = 0;
-    while (i < line.length()) {
-        if (isdigit(line[i])) {
-            x = 0;
-            while (i < line.length() && isdigit(line[i])) {
-                x = x * 10 + (line[i] - '0');
-                i++;
-            }
-            pages.push_back(x);
-        }
-        else i++;
+    while (cin >> x && x != -1) {
+        pages.push_back(x);
     }
 }
 
-// First-In-First-Out (FIFO) algorithm
-int fifo(const vector<int>& pages, int frames) {
-    unordered_set<int> memory;
-    queue<int> order;
+// FIFO
+void fifo(int frameSize, const vector<int>& pages) {
+    cout << "\n--- FIFO ---\n";
+    vector<int> frames;
     int faults = 0;
 
     for (int page : pages) {
-        if (memory.find(page) == memory.end()) {
-            if (memory.size() == frames) {
-                int old = order.front(); order.pop();
-                memory.erase(old);
-            }
-            memory.insert(page);
-            order.push(page);
+        auto it = find(frames.begin(), frames.end(), page);
+        if (it == frames.end()) {
+            if (frames.size() == frameSize)
+                frames.erase(frames.begin());
+            frames.push_back(page);
             faults++;
+            cout << "Page " << page << " -> Fault\n";
+        }
+        else {
+            cout << "Page " << page << " -> Hit\n";
         }
     }
-    return faults;
+    cout << "Total Page Faults: " << faults << endl;
 }
 
-// Least Recently Used (LRU) algorithm
-int lru(const vector<int>& pages, int frames) {
-    unordered_set<int> memory;
+// LRU
+void lru(int frameSize, const vector<int>& pages) {
+    cout << "\n--- LRU ---\n";
+    vector<int> frames;
     unordered_map<int, int> lastUsed;
     int faults = 0;
 
     for (int i = 0; i < pages.size(); ++i) {
         int page = pages[i];
-        if (memory.find(page) == memory.end()) {
-            if (memory.size() == frames) {
-                int lru_page = page;
-                int min_time = i;
-                for (int p : memory) {
-                    if (lastUsed[p] < min_time) {
-                        min_time = lastUsed[p];
-                        lru_page = p;
-                    }
+        auto it = find(frames.begin(), frames.end(), page);
+        if (it == frames.end()) {
+            if (frames.size() == frameSize) {
+                // Find least recently used
+                int lruPage = frames[0];
+                for (int f : frames) {
+                    if (lastUsed[f] < lastUsed[lruPage])
+                        lruPage = f;
                 }
-                memory.erase(lru_page);
+                frames.erase(find(frames.begin(), frames.end(), lruPage));
             }
-            memory.insert(page);
+            frames.push_back(page);
             faults++;
+            cout << "Page " << page << " -> Fault\n";
+        }
+        else {
+            cout << "Page " << page << " -> Hit\n";
         }
         lastUsed[page] = i;
     }
-    return faults;
+    cout << "Total Page Faults: " << faults << endl;
 }
 
-// Optimal (OPT) algorithm
-int opt(const vector<int>& pages, int frames) {
-    unordered_set<int> memory;
+// OPT (Optimal)
+void optimal(int frameSize, const vector<int>& pages) {
+    cout << "\n--- Optimal ---\n";
+    vector<int> frames;
     int faults = 0;
 
     for (int i = 0; i < pages.size(); ++i) {
         int page = pages[i];
-        if (memory.find(page) == memory.end()) {
-            if (memory.size() == frames) {
-                int farthest = i, victim = -1;
-                for (int p : memory) {
-                    int j;
-                    for (j = i + 1; j < pages.size(); ++j) {
-                        if (pages[j] == p) break;
+        auto it = find(frames.begin(), frames.end(), page);
+        if (it == frames.end()) {
+            if (frames.size() == frameSize) {
+                int farthest = -1, idx = -1;
+                for (int f = 0; f < frames.size(); ++f) {
+                    int nextUse = -1;
+                    for (int j = i + 1; j < pages.size(); ++j) {
+                        if (pages[j] == frames[f]) {
+                            nextUse = j;
+                            break;
+                        }
                     }
-                    if (j > farthest) {
-                        farthest = j;
-                        victim = p;
+                    if (nextUse == -1) {
+                        idx = f;
+                        break;
+                    }
+                    if (nextUse > farthest) {
+                        farthest = nextUse;
+                        idx = f;
                     }
                 }
-                memory.erase(victim);
+                frames.erase(frames.begin() + idx);
             }
-            memory.insert(page);
+            frames.push_back(page);
             faults++;
+            cout << "Page " << page << " -> Fault\n";
+        }
+        else {
+            cout << "Page " << page << " -> Hit\n";
         }
     }
-    return faults;
+    cout << "Total Page Faults: " << faults << endl;
 }
 
 int main() {
+    int frameSize;
     vector<int> pages;
-    int frames, choice;
 
-    inputPages(pages);
-    cout << "Enter number of page frames: ";
-    cin >> frames;
-    cout << "Choose algorithm (1-FIFO, 2-LRU, 3-OPT): ";
+    input(frameSize, pages);
+
+    cout << "\nChoose Replacement Algorithm:\n";
+    cout << "1. FIFO\n2. LRU\n3. OPT\n";
+    cout << "Enter your choice: ";
+    int choice;
     cin >> choice;
 
-    int faults = 0;
     switch (choice) {
-    case 1: faults = fifo(pages, frames); break;
-    case 2: faults = lru(pages, frames); break;
-    case 3: faults = opt(pages, frames); break;
-    default: cout << "Invalid choice.\n"; return 1;
+    case 1: fifo(frameSize, pages); break;
+    case 2: lru(frameSize, pages); break;
+    case 3: optimal(frameSize, pages); break;
+    default: cout << "Invalid choice.\n";
     }
 
-    cout << "Total page faults: " << faults << endl;
     return 0;
 }
