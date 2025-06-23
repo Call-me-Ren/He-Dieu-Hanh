@@ -2,11 +2,13 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <string>
 using namespace std;
 
-void printResult(const vector<int>& sequence, int head) {
+void printResult(const vector<int>& sequence, int startHead) {
     int total = 0;
-    cout << "Head moves: ";
+    int head = startHead;
+    cout << "Head moves: " << head << " -> ";
     for (int i = 0; i < sequence.size(); ++i) {
         cout << sequence[i];
         if (i < sequence.size() - 1)
@@ -16,13 +18,13 @@ void printResult(const vector<int>& sequence, int head) {
 
     cout << "Step distances: ";
     for (int i = 0; i < sequence.size(); ++i) {
-        int dist = abs(head - sequence[i]);
+        int dist = abs(sequence[i] - head);
         total += dist;
         cout << dist;
         if (i < sequence.size() - 1) cout << " + ";
         head = sequence[i];
     }
-    cout << " = " << total << endl;
+    cout << " = " << total << " cylinders\n";
 }
 
 // FIFO
@@ -35,6 +37,8 @@ void fifo(const vector<int>& requests, int head) {
 void sstf(vector<int> requests, int head) {
     cout << "\n--- SSTF ---\n";
     vector<int> sequence;
+    int startHead = head;
+
     while (!requests.empty()) {
         auto it = min_element(requests.begin(), requests.end(), [head](int a, int b) {
             return abs(a - head) < abs(b - head);
@@ -43,10 +47,11 @@ void sstf(vector<int> requests, int head) {
         head = *it;
         requests.erase(it);
     }
-    printResult(sequence, head);
+
+    printResult(sequence, startHead);
 }
 
-// SCAN
+// SCAN (sửa lại đúng logic quay đầu)
 void scan(vector<int> requests, int head, int direction, int minCyl, int maxCyl) {
     cout << "\n--- SCAN ---\n";
     vector<int> left, right, sequence;
@@ -58,10 +63,13 @@ void scan(vector<int> requests, int head, int direction, int minCyl, int maxCyl)
     sort(left.begin(), left.end());
     sort(right.begin(), right.end());
 
+    int startHead = head;
+
     if (direction == -1) {
         reverse(left.begin(), left.end());
         sequence.insert(sequence.end(), left.begin(), left.end());
         sequence.push_back(minCyl);
+        reverse(right.begin(), right.end());
         sequence.insert(sequence.end(), right.begin(), right.end());
     }
     else {
@@ -71,7 +79,7 @@ void scan(vector<int> requests, int head, int direction, int minCyl, int maxCyl)
         sequence.insert(sequence.end(), left.begin(), left.end());
     }
 
-    printResult(sequence, head);
+    printResult(sequence, startHead);
 }
 
 // LOOK
@@ -101,7 +109,7 @@ void look(vector<int> requests, int head, int direction) {
 }
 
 // C-SCAN
-void cscan(vector<int> requests, int head, int minCyl, int maxCyl) {
+void cscan(vector<int> requests, int head, int direction, int minCyl, int maxCyl) {
     cout << "\n--- C-SCAN ---\n";
     vector<int> left, right, sequence;
 
@@ -112,16 +120,26 @@ void cscan(vector<int> requests, int head, int minCyl, int maxCyl) {
     sort(left.begin(), left.end());
     sort(right.begin(), right.end());
 
-    sequence.insert(sequence.end(), right.begin(), right.end());
-    sequence.push_back(maxCyl);
-    sequence.push_back(minCyl);
-    sequence.insert(sequence.end(), left.begin(), left.end());
+    if (direction == -1) {
+        reverse(left.begin(), left.end());
+        sequence.insert(sequence.end(), left.begin(), left.end());
+        sequence.push_back(minCyl);
+        sequence.push_back(maxCyl);
+        reverse(right.begin(), right.end());
+        sequence.insert(sequence.end(), right.begin(), right.end());
+    }
+    else {
+        sequence.insert(sequence.end(), right.begin(), right.end());
+        sequence.push_back(maxCyl);
+        sequence.push_back(minCyl);
+        sequence.insert(sequence.end(), left.begin(), left.end());
+    }
 
     printResult(sequence, head);
 }
 
 // C-LOOK
-void clook(vector<int> requests, int head) {
+void clook(vector<int> requests, int head, int direction) {
     cout << "\n--- C-LOOK ---\n";
     vector<int> left, right, sequence;
 
@@ -132,8 +150,16 @@ void clook(vector<int> requests, int head) {
     sort(left.begin(), left.end());
     sort(right.begin(), right.end());
 
-    sequence.insert(sequence.end(), right.begin(), right.end());
-    sequence.insert(sequence.end(), left.begin(), left.end());
+    if (direction == -1) {
+        reverse(left.begin(), left.end());
+        sequence.insert(sequence.end(), left.begin(), left.end());
+        reverse(right.begin(), right.end());
+        sequence.insert(sequence.end(), right.begin(), right.end());
+    }
+    else {
+        sequence.insert(sequence.end(), right.begin(), right.end());
+        sequence.insert(sequence.end(), left.begin(), left.end());
+    }
 
     printResult(sequence, head);
 }
@@ -150,9 +176,16 @@ int main() {
     cout << "Enter current head position: ";
     cin >> currentHead;
 
-    cout << "Enter previous head position: ";
-    cin >> previousHead;
-    requests.push_back(previousHead); // ✅ Thêm previousHead vào dãy yêu cầu
+    string choicePrev;
+    cout << "Do you want to enter previous head position? (yes/no): ";
+    cin >> choicePrev;
+
+    int direction = 1;
+    if (choicePrev == "yes" || choicePrev == "Yes" || choicePrev == "y") {
+        cout << "Enter previous head position: ";
+        cin >> previousHead;
+        direction = (currentHead - previousHead >= 0) ? 1 : -1;
+    }
 
     int n;
     cout << "Enter number of requests: ";
@@ -169,6 +202,7 @@ int main() {
     sorted.push_back(minCyl);
     sorted.push_back(maxCyl);
     sort(sorted.begin(), sorted.end());
+
     cout << "\nSorted cylinders (with boundaries): ";
     for (int x : sorted) cout << x << " ";
     cout << "\n";
@@ -178,15 +212,19 @@ int main() {
     int choice;
     cin >> choice;
 
-    int direction = (currentHead - previousHead >= 0) ? 1 : -1;
+    if (choice >= 3 && choice <= 6) {
+        cout << "Choose direction:\n";
+        cout << "1 = Right (increasing), -1 = Left (decreasing): ";
+        cin >> direction;
+    }
 
     switch (choice) {
     case 1: fifo(requests, currentHead); break;
     case 2: sstf(requests, currentHead); break;
     case 3: scan(requests, currentHead, direction, minCyl, maxCyl); break;
     case 4: look(requests, currentHead, direction); break;
-    case 5: cscan(requests, currentHead, minCyl, maxCyl); break;
-    case 6: clook(requests, currentHead); break;
+    case 5: cscan(requests, currentHead, direction, minCyl, maxCyl); break;
+    case 6: clook(requests, currentHead, direction); break;
     default: cout << "Invalid choice.\n";
     }
 
